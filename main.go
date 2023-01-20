@@ -15,12 +15,12 @@ var (
 
 type Canvas struct {
 	mu      sync.Mutex
-	Clients []*websocket.Conn
+	Clients map[*websocket.Conn]bool
 }
 
 func NewCanvas() *Canvas {
 	return &Canvas{
-		Clients: make([]*websocket.Conn, 0),
+		Clients: make(map[*websocket.Conn]bool, 0),
 	}
 }
 
@@ -33,17 +33,15 @@ func (c *Canvas) handleWS(conn *websocket.Conn) {
 
 func (c *Canvas) join(conn *websocket.Conn) {
 	c.mu.Lock()
-	c.Clients = append(c.Clients, conn)
+	c.Clients[conn] = true
 	c.mu.Unlock()
 }
 
 func (c *Canvas) remove(conn *websocket.Conn) {
 	log.Println("remove client", conn.RemoteAddr())
-	for index, client := range c.Clients {
-		if client == conn {
-			c.Clients = append(c.Clients[:index], c.Clients[index+1:]...)
-		}
-	}
+	c.mu.Lock()
+	delete(c.Clients, conn)
+	c.mu.Unlock()
 }
 
 func (c *Canvas) reader(conn *websocket.Conn) {
@@ -67,12 +65,12 @@ func (c *Canvas) reader(conn *websocket.Conn) {
 }
 
 func (c *Canvas) broadcast(msg []byte) {
-	for _, client := range c.Clients {
+	for conn := range c.Clients {
 		go func(client *websocket.Conn) {
 			if _, err := client.Write(msg); err != nil {
 				log.Println("error writing message", err.Error())
 			}
-		}(client)
+		}(conn)
 	}
 }
 
@@ -83,4 +81,5 @@ func main() {
 	http.Handle("/ws", websocket.Handler(canvas.handleWS))
 	log.Println("running on http://0.0.0.0:4444")
 	log.Panic(http.ListenAndServe(":4444", nil))
+
 }
