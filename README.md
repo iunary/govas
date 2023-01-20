@@ -2,7 +2,7 @@
 
 Basic realtime canvas drawing with golang and websocket
 
-[!alt screenshot](screenshot.png)
+![alt screenshot](screenshot.png)
 
 ## Run
 
