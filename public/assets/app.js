@@ -1,7 +1,8 @@
 const canvas = document.querySelector("#canvas");
 const ctx = canvas.getContext("2d");
 let isDrawing = false;
-
+let color = "black";
+const colors = ["red", "black", "purple"];
 // canvas
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -9,7 +10,7 @@ canvas.height = window.innerHeight;
 ctx.lineJoin = "round";
 ctx.lineCap = "round";
 ctx.lineWidth = 4;
-ctx.strokeStyle = "#000000";
+ctx.strokeStyle = color;
 
 // websocket
 var socket = new WebSocket(`ws://${document.location.host}/ws`);
@@ -20,6 +21,7 @@ socket.onmessage = (event) => {
 		switch (data.action) {
 			case "draw":
 				isDrawing = data.isDrawing;
+				ctx.strokeStyle = data.color;
 				draw(data.x, data.y, data.type);
 				break;
 			case "clear":
@@ -57,6 +59,7 @@ canvas.addEventListener("mousedown", (e) => {
 			y: e.offsetY,
 			type: e.type,
 			isDrawing: isDrawing,
+			color: color,
 		}),
 	);
 });
@@ -70,6 +73,7 @@ canvas.addEventListener("mousemove", (e) => {
 			y: e.offsetY,
 			type: e.type,
 			isDrawing: isDrawing,
+			color: color,
 		}),
 	);
 });
@@ -85,4 +89,16 @@ clearbtn.addEventListener("click", (e) => {
 			action: "clear",
 		}),
 	);
+});
+
+const colorsEl = document.getElementById("colors");
+colors.forEach((col) => {
+	const el = document.createElement("li");
+	el.setAttribute("data-color", col);
+	el.setAttribute("class", "color");
+	el.setAttribute("style", `background-color:${col}; cursor: pointer;`);
+	el.addEventListener("click", () => {
+		color = el.getAttribute("data-color");
+	});
+	colorsEl.appendChild(el);
 });
